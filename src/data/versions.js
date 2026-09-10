@@ -1,14 +1,16 @@
-var version_dictionary = {
+// Aspect data per Thaumcraft version: the six base aspects plus every
+// compound aspect's recipe (two source aspects -> compound).
+export const versions = {
 	"4.1.0g": {
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations": {
+		combinations: {
 			"void": ["air", "entropy"],
 			"light": ["air", "fire"],
 			"energy": ["order", "fire"],
@@ -55,16 +57,16 @@ var version_dictionary = {
 			"exchange": ["motion", "water"]
 		}
 	},
-	"4.1.1.9":{
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+	"4.1.1.9": {
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations":{
+		combinations: {
 			"void": ["air", "entropy"],
 			"light": ["air", "fire"],
 			"weather": ["air", "water"],
@@ -109,16 +111,16 @@ var version_dictionary = {
 			"trap": ["motion", "entropy"]
 		}
 	},
-	"4.1.1.12":{
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+	"4.1.1.12": {
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations":{
+		combinations: {
 			"void": ["air", "entropy"],
 			"light": ["air", "fire"],
 			"weather": ["air", "water"],
@@ -163,16 +165,16 @@ var version_dictionary = {
 			"trap": ["motion", "entropy"]
 		}
 	},
-	"4.1.1.14":{
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+	"4.1.1.14": {
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations":{
+		combinations: {
 			"void": ["air", "entropy"],
 			"light": ["air", "fire"],
 			"weather": ["air", "water"],
@@ -218,7 +220,7 @@ var version_dictionary = {
 		}
 	},
 	"4.2.2.0": {
-		"base_aspects":[
+		base_aspects: [
 			"air",
 			"earth",
 			"fire",
@@ -226,7 +228,7 @@ var version_dictionary = {
 			"order",
 			"entropy"
 		],
-		"combinations":{
+		combinations: {
 			"eldritch": ["void", "darkness"],
 			"tree": ["air", "plant"],
 			"aura": ["magic", "air"],
@@ -272,15 +274,15 @@ var version_dictionary = {
 		}
 	},
 	"5.1.3": {
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations": {
+		combinations: {
 			"eldritch": ["void", "darkness"],
 			"aura": ["energy", "air"],
 			"aversion": ["soul", "entropy"],
@@ -313,15 +315,15 @@ var version_dictionary = {
 		}
 	},
 	"5.2": {
-		"base_aspects":[
-		"air",
-		"earth",
-		"fire",
-		"water",
-		"order",
-		"entropy"
+		base_aspects: [
+			"air",
+			"earth",
+			"fire",
+			"water",
+			"order",
+			"entropy"
 		],
-		"combinations": {
+		combinations: {
 			"craft": ["man", "tool"],
 			"greed": ["man", "hunger"],
 			"eldritch": ["void", "darkness"],

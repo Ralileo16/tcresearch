@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #0b0716;
+  --color-abyss: #171031;
+  --color-card: #1e1740;
+  --color-rune: #8b5cf6;
+  --color-rune-100: #c4b5fd;
+  --color-gold: #d4af37;
+  --color-parchment: #ece6d8;
+
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --font-sans: "Crimson Text", Georgia, serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--color-parchment);
+  font-family: var(--font-sans);
+  background-color: #0b0716;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -15%, rgba(139, 92, 246, 0.22), transparent 60%),
+    radial-gradient(ellipse 55% 40% at 100% 105%, rgba(212, 175, 55, 0.1), transparent 65%),
+    radial-gradient(ellipse 55% 40% at 0% 105%, rgba(76, 61, 163, 0.28), transparent 65%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.4);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.45) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.45);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

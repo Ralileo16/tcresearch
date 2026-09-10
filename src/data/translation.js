@@ -1,4 +1,5 @@
-var translate = {
+// Maps Thaumcraft aspect keys to their latin display name / image filename.
+export const translate = {
 	"air": "aer",
 	"earth": "terra",
 	"fire": "ignis",
