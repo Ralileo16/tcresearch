@@ -41,7 +41,7 @@ export default function ResultPanel({ result, onHover, onLeave, onClose }) {
 							</div>
 							{i < path.length - 1 && (
 								<span className="mx-2 text-lg text-rune/60 select-none" aria-hidden>
-									↓
+									→
 								</span>
 							)}
 						</li>

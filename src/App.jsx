@@ -111,7 +111,7 @@ function Research({ version, onVersionChange }) {
 						<span className="text-gold">Thaumcraft</span> Research Helper
 					</h1>
 					<p className="mt-2 text-sm tracking-[0.3em] uppercase text-rune-100/60">
-						Arcane pathfinding for research notes
+						Aspects pathfinding for research notes
 					</p>
 				</header>
 
