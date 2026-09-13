@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addons } from './data/addons.js'
 import { versions } from './data/versions.js'
 import { aspectName } from './lib/aspects.js'
 import { buildCatalog, findPath, summarizePath } from './lib/search.js'
+import { loadState, saveState } from './lib/storage.js'
 import AspectSelect from './components/AspectSelect.jsx'
 import AvailableAspects from './components/AvailableAspects.jsx'
 import ComboTooltip from './components/ComboTooltip.jsx'
@@ -22,11 +23,31 @@ function initialAvailable(catalog) {
 function Research({ version, onVersionChange }) {
 	const catalog = useMemo(() => buildCatalog(version), [version]);
 
-	const [from, setFrom] = useState('air');
-	const [to, setTo] = useState('air');
-	const [minSteps, setMinSteps] = useState(1);
-	const [available, setAvailable] = useState(() => initialAvailable(catalog));
-	const [addonToggles, setAddonToggles] = useState({});
+	// Restore the last session's selection for this version (per-version keys
+	// mean switching versions restores each version's own state).
+	const [saved] = useState(() => loadState(version) ?? {});
+
+	const [from, setFrom] = useState(
+		() => (saved.from && catalog.allAspects.includes(saved.from) ? saved.from : 'air'),
+	);
+	const [to, setTo] = useState(
+		() => (saved.to && catalog.allAspects.includes(saved.to) ? saved.to : 'air'),
+	);
+	const [minSteps, setMinSteps] = useState(() =>
+		Math.min(10, Math.max(1, Number(saved.minSteps) || 1)),
+	);
+	const [available, setAvailable] = useState(() => {
+		const defaults = initialAvailable(catalog);
+		const valid = Array.isArray(saved.available)
+			? saved.available.filter((a) => catalog.allAspects.includes(a))
+			: null;
+		return new Set(valid ?? defaults);
+	});
+	const [addonToggles, setAddonToggles] = useState(() => {
+		const toggles = {};
+		for (const id of Object.keys(addons)) toggles[id] = !!saved.addonToggles?.[id];
+		return toggles;
+	});
 	const [results, setResults] = useState([]);
 	const [message, setMessage] = useState('');
 	const [tooltip, setTooltip] = useState(null);
@@ -63,8 +84,11 @@ function Research({ version, onVersionChange }) {
 		setTooltip({ aspect, x: e.clientX, y: e.clientY });
 	};
 
-	const findConnection = (e) => {
-		e.preventDefault();
+	const runSearch = useCallback(() => {
+		if (from === to) {
+			setMessage('From and To are the same. Pick two different aspects.');
+			return;
+		}
 		if (!catalog.graph[from] || !catalog.graph[to]) {
 			setMessage('Invalid combination selected.');
 			return;
@@ -92,7 +116,39 @@ function Research({ version, onVersionChange }) {
 			},
 		]);
 		setMessage('');
+	}, [from, to, minSteps, catalog, available]);
+
+	const findConnection = (e) => {
+		e.preventDefault();
+		runSearch();
 	};
+
+	// Global shortcuts: Ctrl/Cmd+Enter finds the connection from anywhere,
+	// '/' focuses the From picker.
+	useEffect(() => {
+		const onKeyDown = (e) => {
+			const typing =
+				e.target instanceof HTMLElement &&
+				['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+
+			if (e.key === '/' && !typing) {
+				e.preventDefault();
+				const trigger = document.getElementById('from-aspect-trigger');
+				trigger?.focus();
+				trigger?.click();
+			} else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && e.target.tagName !== 'BUTTON') {
+				e.preventDefault();
+				runSearch();
+			}
+		};
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [runSearch]);
+
+	// Persist the selection for this version so a reload restores it.
+	useEffect(() => {
+		saveState(version, { from, to, minSteps, available: [...available], addonToggles });
+	}, [version, from, to, minSteps, available, addonToggles]);
 
 	const closeResult = (id) => setResults((rs) => rs.filter((r) => r.id !== id));
 
@@ -143,7 +199,28 @@ function Research({ version, onVersionChange }) {
 								</select>
 							</div>
 
-							<AspectSelect label="From" value={from} onChange={setFrom} options={selectOptions} />
+							<AspectSelect
+								label="From"
+								value={from}
+								onChange={setFrom}
+								options={selectOptions}
+								triggerId="from-aspect-trigger"
+							/>
+
+							<div className="flex justify-center">
+								<button
+									type="button"
+									onClick={() => {
+										setFrom(to);
+										setTo(from);
+									}}
+									className="rounded-lg border border-rune/30 bg-rune/10 px-3 py-1 text-xs text-rune-100 transition-colors hover:bg-rune/20"
+									title="Swap From and To"
+								>
+									⇄ Swap
+								</button>
+							</div>
+
 							<AspectSelect label="To" value={to} onChange={setTo} options={selectOptions} />
 
 							<div>
@@ -238,7 +315,12 @@ function Research({ version, onVersionChange }) {
 								Pick the two aspects at the edges of your research note and the number of blank
 								cells between them, then search. Lock aspects you can't craft yet to route the
 								path around them. Hover any compound aspect to see how it's made — the search
-								only ever uses recipes available in the selected version.
+								only ever uses recipes available in the selected version.{' '}
+								<span className="text-parchment/40">
+									Ctrl/Cmd+Enter runs the search from anywhere; pressing{' '}
+									<kbd className="rounded border border-white/15 bg-white/5 px-1 text-[10px]">/</kbd>{' '}
+									focuses the From picker.
+								</span>
 							</p>
 						</div>
 					</section>

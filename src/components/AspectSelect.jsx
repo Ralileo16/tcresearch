@@ -1,23 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { aspectName } from '../lib/aspects.js'
 import AspectImg from './AspectImg.jsx'
 
-export default function AspectSelect({ label, value, onChange, options }) {
+export default function AspectSelect({ label, value, onChange, options, triggerId }) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState('');
+	const [activeIndex, setActiveIndex] = useState(0);
 	const rootRef = useRef(null);
+	const listRef = useRef(null);
+	const listId = useId();
 
-	useEffect(() => {
-		if (!open) return;
-		const onClick = (e) => {
-			if (rootRef.current && !rootRef.current.contains(e.target)) {
-				setOpen(false);
-				setQuery('');
-			}
-		};
-		document.addEventListener('mousedown', onClick);
-		return () => document.removeEventListener('mousedown', onClick);
-	}, [open]);
+	const select = useCallback(
+		(aspect) => {
+			onChange(aspect);
+			setOpen(false);
+			setQuery('');
+		},
+		[onChange],
+	);
+
+	const close = useCallback(() => {
+		setOpen(false);
+		setQuery('');
+	}, []);
 
 	const filtered = useMemo(() => {
 		const q = query.trim().toLowerCase();
@@ -27,6 +32,44 @@ export default function AspectSelect({ label, value, onChange, options }) {
 		);
 	}, [options, query]);
 
+	useEffect(() => {
+		if (!open) return;
+		const onClick = (e) => {
+			if (rootRef.current && !rootRef.current.contains(e.target)) close();
+		};
+		document.addEventListener('mousedown', onClick);
+		return () => document.removeEventListener('mousedown', onClick);
+	}, [open, close]);
+
+	// Keep the highlighted option in view while arrowing through the list.
+	useEffect(() => {
+		if (!open || filtered.length === 0) return;
+		listRef.current?.children[activeIndex]?.scrollIntoView({ block: 'nearest' });
+	}, [activeIndex, open, filtered]);
+
+	const toggleOpen = () => {
+		setOpen((o) => !o);
+		setActiveIndex(0);
+	};
+
+	const onInputKeyDown = (e) => {
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			setActiveIndex((i) => (filtered.length ? Math.min(i + 1, filtered.length - 1) : 0));
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			setActiveIndex((i) => Math.max(i - 1, 0));
+		} else if (e.key === 'Enter') {
+			// Ctrl/Cmd+Enter is used by the global "find connection" shortcut.
+			if (e.ctrlKey || e.metaKey) return;
+			e.preventDefault();
+			if (filtered[activeIndex]) select(filtered[activeIndex]);
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			close();
+		}
+	};
+
 	return (
 		<div ref={rootRef} className="relative">
 			<label className="block text-xs font-semibold tracking-widest uppercase text-rune/70 mb-1.5">
@@ -34,7 +77,19 @@ export default function AspectSelect({ label, value, onChange, options }) {
 			</label>
 			<button
 				type="button"
-				onClick={() => setOpen((o) => !o)}
+				id={triggerId}
+				onClick={toggleOpen}
+				onKeyDown={(e) => {
+					if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+						e.preventDefault();
+						if (!open) {
+							setOpen(true);
+							setActiveIndex(0);
+						}
+					}
+				}}
+				aria-haspopup="listbox"
+				aria-expanded={open}
 				className="w-full flex items-center gap-3 rounded-lg border border-gold/25 bg-white/5 px-3 py-2 text-left transition-colors hover:border-gold/50 hover:bg-white/10"
 			>
 				<AspectImg aspect={value} size={28} />
@@ -51,27 +106,34 @@ export default function AspectSelect({ label, value, onChange, options }) {
 						<input
 							autoFocus
 							value={query}
-							onChange={(e) => setQuery(e.target.value)}
+							onChange={(e) => {
+								setQuery(e.target.value);
+								setActiveIndex(0);
+							}}
+							onKeyDown={onInputKeyDown}
 							placeholder="Search aspects…"
+							role="combobox"
+							aria-expanded={open}
+							aria-controls={listId}
+							aria-activedescendant={filtered[activeIndex] ? `option-${listId}-${filtered[activeIndex]}` : undefined}
 							className="w-full rounded-md bg-white/5 border border-white/10 px-3 py-1.5 text-sm text-parchment placeholder:text-parchment/30 focus:border-gold/50 focus:outline-none"
 						/>
 					</div>
-					<ul className="max-h-72 overflow-y-auto py-1">
+					<ul ref={listRef} id={listId} role="listbox" className="max-h-72 overflow-y-auto py-1">
 						{filtered.length === 0 && (
 							<li className="px-3 py-2 text-sm text-parchment/40">No aspects match</li>
 						)}
-						{filtered.map((aspect) => (
-							<li key={aspect}>
+						{filtered.map((aspect, i) => (
+							<li key={aspect} role="presentation">
 								<button
 									type="button"
-									onClick={() => {
-										onChange(aspect);
-										setOpen(false);
-										setQuery('');
-									}}
+									id={`option-${listId}-${aspect}`}
+									role="option"
+									aria-selected={aspect === value}
+									onClick={() => select(aspect)}
 									className={`w-full flex items-center gap-3 px-3 py-1.5 text-left transition-colors hover:bg-rune/15 ${
-										aspect === value ? 'bg-rune/20' : ''
-									}`}
+										i === activeIndex ? 'bg-rune/25' : ''
+									} ${aspect === value ? 'bg-rune/20' : ''}`}
 								>
 									<AspectImg aspect={aspect} size={26} />
 									<span className="flex-1">
