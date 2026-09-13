@@ -3,7 +3,7 @@ import { addons } from './data/addons.js'
 import { versions } from './data/versions.js'
 import { aspectName } from './lib/aspects.js'
 import { buildCatalog, findPath, summarizePath } from './lib/search.js'
-import { loadState, saveState } from './lib/storage.js'
+import { loadState, saveState, persistGet, persistSet, VERSION_KEY } from './lib/storage.js'
 import AspectSelect from './components/AspectSelect.jsx'
 import AvailableAspects from './components/AvailableAspects.jsx'
 import ComboTooltip from './components/ComboTooltip.jsx'
@@ -11,7 +11,15 @@ import ResultPanel from './components/ResultPanel.jsx'
 import StocksPanel from './components/StocksPanel.jsx'
 
 export default function App() {
-	const [version, setVersion] = useState('5.2');
+	// Restore the last-used Thaumcraft version (falls back to the newest).
+	const [version, setVersion] = useState(() => {
+		const saved = persistGet(VERSION_KEY);
+		return saved && versions[saved] ? saved : '5.2';
+	});
+	// Remember the active version so a reload lands back where you were.
+	useEffect(() => {
+		persistSet(VERSION_KEY, version);
+	}, [version]);
 	// Keying by version remounts the panel, which resets all research state
 	// (From/To, steps, unlocked aspects, results) whenever it changes.
 	return <Research key={version} version={version} onVersionChange={setVersion} />;
