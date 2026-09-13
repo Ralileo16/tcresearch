@@ -8,6 +8,7 @@ import AspectSelect from './components/AspectSelect.jsx'
 import AvailableAspects from './components/AvailableAspects.jsx'
 import ComboTooltip from './components/ComboTooltip.jsx'
 import ResultPanel from './components/ResultPanel.jsx'
+import StocksPanel from './components/StocksPanel.jsx'
 
 export default function App() {
 	const [version, setVersion] = useState('5.2');
@@ -48,9 +49,27 @@ function Research({ version, onVersionChange }) {
 		for (const id of Object.keys(addons)) toggles[id] = !!saved.addonToggles?.[id];
 		return toggles;
 	});
+	const [stocks, setStocks] = useState(() => {
+		if (!saved.stocks) return {};
+		return Object.fromEntries(
+			Object.entries(saved.stocks).filter(([a]) => catalog.allAspects.includes(a)),
+		);
+	});
 	const [results, setResults] = useState([]);
 	const [message, setMessage] = useState('');
 	const [tooltip, setTooltip] = useState(null);
+
+	// Path cost: unavailable aspects are near-impossible, everything else is
+	// priced by scarcity — holding more of an aspect makes it cheaper to route
+	// through.
+	const cost = useCallback(
+		(aspect) => {
+			if (!available.has(aspect)) return 1000;
+			const held = stocks[aspect] ?? 0;
+			return 1 / (1 + held);
+		},
+		[available, stocks],
+	);
 
 	const selectOptions = useMemo(
 		() => [...catalog.allAspects].sort((a, b) => aspectName(a).localeCompare(aspectName(b))),
@@ -98,7 +117,7 @@ function Research({ version, onVersionChange }) {
 			to,
 			minSteps,
 			graph: catalog.graph,
-			isAvailable: (aspect) => available.has(aspect),
+			cost,
 		});
 		if (!path) {
 			setMessage('No connection found with the current aspect set. Unlock more aspects and try again.');
@@ -116,7 +135,7 @@ function Research({ version, onVersionChange }) {
 			},
 		]);
 		setMessage('');
-	}, [from, to, minSteps, catalog, available]);
+	}, [from, to, minSteps, catalog, cost]);
 
 	const findConnection = (e) => {
 		e.preventDefault();
@@ -147,8 +166,8 @@ function Research({ version, onVersionChange }) {
 
 	// Persist the selection for this version so a reload restores it.
 	useEffect(() => {
-		saveState(version, { from, to, minSteps, available: [...available], addonToggles });
-	}, [version, from, to, minSteps, available, addonToggles]);
+		saveState(version, { from, to, minSteps, available: [...available], addonToggles, stocks });
+	}, [version, from, to, minSteps, available, addonToggles, stocks]);
 
 	const closeResult = (id) => setResults((rs) => rs.filter((r) => r.id !== id));
 
@@ -303,6 +322,14 @@ function Research({ version, onVersionChange }) {
 							onLockAll={() => setAvailable(new Set())}
 							addonToggles={addonToggles}
 							onToggleAddon={toggleAddon}
+							onHover={handleHover}
+							onLeave={() => setTooltip(null)}
+						/>
+
+						<StocksPanel
+							catalog={catalog}
+							stocks={stocks}
+							onChange={(aspect, value) => setStocks((prev) => ({ ...prev, [aspect]: value }))}
 							onHover={handleHover}
 							onLeave={() => setTooltip(null)}
 						/>

@@ -47,38 +47,38 @@ export function buildCatalog(version) {
 	return { version, base_aspects, combinations, addonAspects, allAspects, graph, compounds };
 }
 
-// Weighted A*-style search that finds the lowest-cost path from `from` to `to`
-// with at least `minSteps` internal steps. Available aspects cost 1, disabled
-// (unavailable) aspects cost 100, so the search leans on aspects the player
-// actually has access to. Mirrors the original script's behaviour.
-export function findPath({ from, to, minSteps, graph, isAvailable }) {
+// Finds the lowest-cost path from `from` to `to` with at least `minSteps`
+// internal steps. `cost(aspect)` supplies the per-aspect weight, so passing
+// stock-aware costs lets the search prefer aspects you possess most. The
+// search space is state = (aspect, steps so far); capping the steps keeps the
+// Dijkstra-style expansion fast while still allowing detours that are cheaper
+// overall.
+export function findPath({ from, to, minSteps, graph, cost }) {
 	if (from === to || !graph[from] || !graph[to]) return null;
-	const getWeight = (aspect) => (isAvailable(aspect) ? 1 : 100);
-	const visited = new Map();
-	const queue = new MinHeap((a, b) => a.length - b.length);
-	queue.push({ path: [from], length: 0 });
 
-	while (queue.size > 0) {
-		const element = queue.pop();
-		const node = element.path.pop();
-		const edgesBefore = element.path.length;
-		const seen = visited.get(node);
-		if (seen && seen.includes(edgesBefore)) continue;
+	const maxSteps = minSteps + 14;
+	const heap = new MinHeap((a, b) => a.cost - b.cost || a.steps - b.steps);
+	const best = new Map();
+	const key = (node, steps) => `${node}:${steps}`;
 
-		element.path.push(node);
-		if (node === to && element.path.length > minSteps + 1) {
-			return element.path;
+	best.set(key(from, 0), cost(from));
+	heap.push({ node: from, steps: 0, cost: cost(from), path: [from] });
+
+	while (heap.size > 0) {
+		const current = heap.pop();
+		if (current.cost > (best.get(key(current.node, current.steps)) ?? Infinity)) continue;
+
+		if (current.node === to && current.steps > minSteps) return current.path;
+		if (current.steps >= maxSteps) continue;
+
+		for (const neighbor of graph[current.node] ?? []) {
+			const steps = current.steps + 1;
+			const nextCost = current.cost + cost(neighbor);
+			const stateKey = key(neighbor, steps);
+			if (nextCost >= (best.get(stateKey) ?? Infinity)) continue;
+			best.set(stateKey, nextCost);
+			heap.push({ node: neighbor, steps, cost: nextCost, path: [...current.path, neighbor] });
 		}
-
-		for (const neighbor of graph[node] ?? []) {
-			queue.push({
-				path: [...element.path, neighbor],
-				length: element.length + getWeight(neighbor),
-			});
-		}
-
-		if (!seen) visited.set(node, []);
-		visited.get(node).push(element.path.length - 1);
 	}
 	return null;
 }
