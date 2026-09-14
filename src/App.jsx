@@ -179,6 +179,31 @@ function Research({ version, onVersionChange }) {
 
 	const closeResult = (id) => setResults((rs) => rs.filter((r) => r.id !== id));
 
+	// Mark a solved note as done: the aspects used in the path are spent, so
+	// they're removed from the available set and deducted from stocks. Both are
+	// persisted by the saveState effect below, so this survives a reload.
+	const confirmResult = (id) => {
+		const result = results.find((r) => r.id === id);
+		if (!result || result.confirmed) return;
+		const usedEntries = Object.entries(result.counts).filter(([, n]) => n > 0);
+		if (!usedEntries.length) {
+			setResults((rs) => rs.map((r) => (r.id === id ? { ...r, confirmed: true } : r)));
+			return;
+		}
+		const used = new Map(usedEntries);
+		setStocks((prev) => {
+			const next = { ...prev };
+			for (const [aspect, n] of used) next[aspect] = Math.max(0, (next[aspect] ?? 0) - n);
+			return next;
+		});
+		setAvailable((prev) => {
+			const next = new Set(prev);
+			for (const aspect of used.keys()) next.delete(aspect);
+			return next;
+		});
+		setResults((rs) => rs.map((r) => (r.id === id ? { ...r, confirmed: true } : r)));
+	};
+
 	return (
 		<div className="min-h-screen">
 			<div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
@@ -376,6 +401,7 @@ function Research({ version, onVersionChange }) {
 									onHover={handleHover}
 									onLeave={() => setTooltip(null)}
 									onClose={() => closeResult(result.id)}
+									onConfirm={() => confirmResult(result.id)}
 								/>
 							))}
 						</div>

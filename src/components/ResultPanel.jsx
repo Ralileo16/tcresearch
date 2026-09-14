@@ -1,8 +1,9 @@
 import { aspectName } from '../lib/aspects.js'
 import AspectImg from './AspectImg.jsx'
 
-export default function ResultPanel({ result, onHover, onLeave, onClose }) {
+export default function ResultPanel({ result, onHover, onLeave, onClose, onConfirm }) {
 	const { from, to, path, counts, steps } = result;
+	const confirmed = !!result.confirmed;
 	const used = Object.entries(counts).filter(([, n]) => n > 0);
 
 	return (
@@ -66,7 +67,28 @@ export default function ResultPanel({ result, onHover, onLeave, onClose }) {
 								</span>
 							))}
 						</span>
-					)}
+)}
+
+					<div className="mt-3 flex items-center justify-center gap-2 border-t border-white/10 pt-3">
+						<button
+							type="button"
+							onClick={onConfirm}
+							disabled={confirmed}
+							title={
+								confirmed
+									? 'These aspects have been marked as used'
+									: 'Consume the aspects shown above from your stocks and available list'
+							}
+							className="rounded-lg border border-gold/30 bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-gold/20 disabled:cursor-default disabled:opacity-60"
+						>
+							{confirmed ? '✓ Aspects used' : 'Confirm used aspects'}
+						</button>
+						{confirmed && (
+							<span className="text-[11px] text-parchment/40">
+								removed {used.reduce((acc, [, n]) => acc + n, 0)} total
+							</span>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>
