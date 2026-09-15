@@ -69,8 +69,8 @@ export default function ResultPanel({ result, onHover, onLeave, onClose, onConfi
 						</span>
 )}
 
-					<div className="mt-3 flex items-center justify-center gap-2 border-t border-white/10 pt-3">
-						<button
+<div className="mt-3 flex items-center justify-center gap-2 pt-3">
+					<button
 							type="button"
 							onClick={onConfirm}
 							disabled={confirmed}

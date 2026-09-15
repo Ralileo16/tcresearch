@@ -24,6 +24,28 @@ export function compoundAspects(combinations) {
 	return new Set(Object.keys(combinations));
 }
 
+// Explosion depth of every aspect from the base (primal) ones: base aspects
+// are 0, each compound is 1 + the deepest of its parents. The deeper an
+// aspect is, the more expensive it is to re-combine, which lets the search
+// prefer simple aspects over sprawling compound chains.
+export function aspectDepths(baseAspects, combinations) {
+	const levels = new Map();
+	for (const a of baseAspects) levels.set(a, 0);
+	let changed = true;
+	while (changed) {
+		changed = false;
+		for (const [compound, [partA, partB]] of Object.entries(combinations)) {
+			if (levels.has(compound)) continue;
+			const la = levels.get(partA);
+			const lb = levels.get(partB);
+			if (la === undefined || lb === undefined) continue;
+			levels.set(compound, 1 + Math.max(la, lb));
+			changed = true;
+		}
+	}
+	return levels;
+}
+
 // Everything the UI needs for a given Thaumcraft version.
 export function buildCatalog(version) {
 	const { base_aspects, combinations: versionCombos } = versions[version] ?? {};
@@ -43,8 +65,9 @@ export function buildCatalog(version) {
 	];
 	const graph = buildGraph(combinations);
 	const compounds = compoundAspects(combinations);
+	const levels = aspectDepths(base_aspects, combinations);
 
-	return { version, base_aspects, combinations, addonAspects, allAspects, graph, compounds };
+	return { version, base_aspects, combinations, addonAspects, allAspects, graph, compounds, levels };
 }
 
 // Finds the lowest-cost path from `from` to `to` with at least `minSteps`

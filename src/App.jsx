@@ -68,15 +68,18 @@ function Research({ version, onVersionChange }) {
 	const [tooltip, setTooltip] = useState(null);
 
 	// Path cost: unavailable aspects are near-impossible, everything else is
-	// priced by scarcity — holding more of an aspect makes it cheaper to route
-	// through.
+	// priced by scarcity first, then by complexity. Holding more of an aspect
+	// makes it cheaper to route through; among equal holdings, the deeper an
+	// aspect is (how many combination steps stand behind it) the more it
+	// costs — so abundant primals are preferred over rare compound chains.
 	const cost = useCallback(
 		(aspect) => {
 			if (!available.has(aspect)) return 1000;
 			const held = stocks[aspect] ?? 0;
-			return 1 / (1 + held);
+			const level = catalog.levels.get(aspect) ?? 0;
+			return (1 + level) / (1 + held);
 		},
-		[available, stocks],
+		[available, stocks, catalog],
 	);
 
 	const selectOptions = useMemo(
